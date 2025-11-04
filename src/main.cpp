@@ -91,8 +91,8 @@ void handleRoot() {
   "<body>"
   "<div class='container'>"
   "<h1>🔆 Controle do LED & DHT11</h1>"
-  "<div class='sensor'>"
-  "🌡️ Temperatura: " + String(temperatura, 1) + " °C<br>💧 Umidade: " + String(umidade, 1) + " %"
+  "<div class='sensor' id='sensor'>"
+  "🌡️ Temperatura: -- °C<br>💧 Umidade: -- %"
   "</div>"
   "<p><button class='btn btn-on' onclick='ligar()'>⚡ Ligar</button></p>"
   "<p><button class='btn btn-off' onclick='desligar()'>🌙 Desligar</button></p>"
@@ -103,12 +103,26 @@ void handleRoot() {
   "function desligar() {"
   "  fetch('/off').then(r => console.log('Requisição enviada'));"
   "}"
-  "setTimeout(() => { location.reload(); }, 5000);"
+  "function atualizarSensor() {"
+  "  fetch('/sensor').then(resp => resp.json()).then(data => {"
+  "    document.getElementById('sensor').innerHTML = '🌡️ Temperatura: ' + data.temperatura.toFixed(1) + ' °C<br>💧 Umidade: ' + data.umidade.toFixed(1) + ' %';"
+  "  });"
+  "}"
+  "setInterval(atualizarSensor, 2000);"
+  "window.onload = atualizarSensor;"
   "</script>"
   "</div>"
   "</body>"
   "</html>";
   server.send(200, "text/html", html);
+}
+// Endpoint para retornar temperatura e umidade em JSON
+void handleSensor() {
+  String json = "{";
+  json += "\"temperatura\":" + String(temperatura, 1) + ",";
+  json += "\"umidade\":" + String(umidade, 1);
+  json += "}";
+  server.send(200, "application/json", json);
 }
 
 void handleOn() {
@@ -148,6 +162,7 @@ void setup() {
   server.on("/", handleRoot);
   server.on("/on", handleOn);
   server.on("/off", handleOff);
+  server.on("/sensor", handleSensor);
 
   server.begin();
   Serial.println("Servidor web iniciado!");
@@ -163,7 +178,7 @@ void loop() {
   }
 
   // Gatilho: se temperatura < 22°C, liga o LED
-  if (temperatura < 22.0) {
+  if (temperatura > 27.0) {
     digitalWrite(ledPin, LOW); // Liga LED
   } else {
     digitalWrite(ledPin, HIGH); // Desliga LED
